@@ -8,3 +8,12 @@ The following specification BNF will produce a valid web form the validates two 
 	form
 	shortText 'Enter full name' length >= 10 + 10 / 5 + 20/2
 	number 'Enter legal age' is >= 3+6*3
+
+
+The way simpler option is still supported, where the following BNF will produce an identical form
+
+	form
+	shortText 'Enter full name' length >= 22
+	number 'Enter legal age' is >= 21
+
+Ofcause options are important and therefore the two options of hardcoding numbers for validation and computing math for input validation is supported.
