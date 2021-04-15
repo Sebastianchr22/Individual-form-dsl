@@ -1,0 +1,64 @@
+grammar form.FormDSL with org.eclipse.xtext.common.Terminals
+
+generate formDSL "http://www.FormDSL.form"
+
+Form: 
+	{Form}"form" content += (Input)*
+;
+
+Input:
+	type = Type
+	name = Name
+	expression += Expression*
+	;
+
+Type:
+	{ShortText} text="shortText" | 
+	{Generic} text="date" | 
+	{Generic} text="number" | 
+	{Money} text="money" | 
+	{Generic} text="email" | 
+	{LongText} text="longText" | 
+	{StringNumber} text="stringNumber"
+;
+
+Name: 
+	text = STRING
+;
+
+Expression:
+	{Optional}text="optional" | {Focus}text="focus" | Exp
+;
+
+Exp returns Expression:
+	({Is}text="is" | {Length}text="length") comp=Comparison value=MathExp
+;
+
+Comparison:
+	"<" {LessThan} | 
+	">" {GreaterThan} | 
+	"<=" {LessThanInclusive} | 
+	">=" {GreaterThanInclusive} | 
+	"==" {Exactly} | 
+	"!=" {Not}
+;
+
+MathExp returns Expression:
+	Factor (('+' {Plus.left=current} | '-' {Minus.left=current}) right=Factor)*
+;
+
+Factor returns Expression:
+	Primary (('*' {Mult.left=current} | '/' {Div.left=current}))*	
+;
+
+Primary returns Expression:
+	Number | Parenthesis
+;
+
+Parenthesis returns Expression:
+	'(' Exp ')'
+;
+
+Number returns Expression:
+	{Num} value=INT
+;
