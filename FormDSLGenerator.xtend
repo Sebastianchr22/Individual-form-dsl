@@ -7,6 +7,7 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
+import java.util.List
 import form.formDSL.Form
 import form.formDSL.Input
 import form.formDSL.Name
@@ -27,7 +28,6 @@ import form.formDSL.LessThan
 import form.formDSL.GreaterThan
 import form.formDSL.Exactly
 import form.formDSL.Not
-import java.util.List
 import form.formDSL.Plus
 import form.formDSL.Minus
 import form.formDSL.Mult
@@ -123,7 +123,7 @@ class FormDSLGenerator extends AbstractGenerator {
 		'''
 		if(!(document.getElementById("«name»").value «exp.comp.getCompText» «exp.value.computeMath»)){
 			console.log("«name.text» property failed: " + document.getElementById("«name»").value);
-			document.getElementById("error_output").innerHTML = "'«name.text»' field was incorrent, '«name.text»' must be «exp.comp.getCompText» «exp.computeMath»";
+			document.getElementById("error_output").innerHTML = "'«name.text»' field was incorrent, '«name.text»' must be «exp.comp.getCompText» «exp.value.computeMath»";
 			failedProperty = true;
 		}
 		'''
@@ -159,14 +159,14 @@ class FormDSLGenerator extends AbstractGenerator {
 		'''!='''
 	}
 
-
+	
 	/* Handling math expressions */
 	def float computeMath(Expression exp){
 		switch exp{
 			Plus: exp.left.computeMath + exp.right.computeMath
 			Minus: exp.left.computeMath - exp.right.computeMath
-			//Mult: exp.left.computeMath * exp.right.computeMath
-			//Div: exp.left.computeMath / exp.right.computeMath
+			Mult: exp.left.computeMath * exp.right.computeMath
+			Div: exp.left.computeMath / exp.right.computeMath
 			Num: exp.value
 		}
 	}
@@ -175,8 +175,8 @@ class FormDSLGenerator extends AbstractGenerator {
 
 
 	/* Handling creating the JS and HTML required */
-	var List<String> validators = newArrayList
 	def CharSequence compilejs(Form form) {
+		var List<String> validators = newArrayList
 		'''
 			<script>
 			//Set focus and required attributes to inputs
