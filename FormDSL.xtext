@@ -48,7 +48,7 @@ MathExp returns Expression:
 ;
 
 Factor returns Expression:
-	Primary (('*' {Mult.left=current} | '/' {Div.left=current}))*	
+	Primary (('*' {Mult.left=current} | '/' {Div.left=current}) right=Primary)*	
 ;
 
 Primary returns Expression:
