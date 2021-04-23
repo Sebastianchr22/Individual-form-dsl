@@ -16,7 +16,6 @@ import form.formDSL.Expression
 import form.formDSL.Generic
 import form.formDSL.LongText
 import form.formDSL.Money
-import form.formDSL.StringNumber
 import form.formDSL.ShortText
 import form.formDSL.Optional
 import form.formDSL.Focus
@@ -47,19 +46,19 @@ class FormDSLGenerator extends AbstractGenerator {
 	
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		val form = resource.allContents.filter(Form).next
-		fsa.generateFile("formPage.html", form.compileClass);
+		fsa.generateFile("formPage.html", form.compilePage);
 	}
 	
 	
 	
 	/* Handles creating the initial form, and computing all input fields */
-	def CharSequence compileClass(Form form) {
+	def CharSequence compilePage(Form form) {
 		'''
 			«startHTML()»
 			
 			<form onSubmit="submitHandler(event)">
 				«FOR input : form.content»
-					«input.compute»
+					«input.generateHTML»
 				«ENDFOR»
 				<br>
 				<input type="submit" class="btn btn-primary" value="Submit" onclick="submitHandler(event)">
@@ -73,34 +72,31 @@ class FormDSLGenerator extends AbstractGenerator {
 	
 
 	/* Used to handle creating label associated with the input field (generated later) */
-	def dispatch CharSequence compute(Input input) {
+	def dispatch CharSequence generateHTML(Input input) {
 		'''
-			<label class="form-label">«input.name.compute»:</label>
-			«compute(input.type, input.name)»
+			<label class="form-label">«input.name.generateHTML»:</label>
+			«generateHTML(input.type, input.name)»
 		'''
 	}
 
 
 	/* Handles creation of input html */
-	def dispatch CharSequence compute(Generic type, Name name) {
+	def dispatch CharSequence generateHTML(Generic type, Name name) {
 		'''<input class="«formClass»" type="«type.text»" id="«name»" placeholder="«name.text»">'''
 	}
-	def dispatch CharSequence compute(LongText type, Name name) {
+	def dispatch CharSequence generateHTML(LongText type, Name name) {
 		'''<textarea class="«formClass»" id="«name»" rows="8" cols="50" placeholder="«name.text»"></textarea>'''
 	}
-	def dispatch CharSequence compute(Money type, Name name) {
+	def dispatch CharSequence generateHTML(Money type, Name name) {
 		'''<input class="«formClass»" type="number" min="0.00" max="10000.00" step="0.01" placeholder="0.00" id="«name»">'''
 	}
-	def dispatch CharSequence compute(ShortText type, Name name) {
+	def dispatch CharSequence generateHTML(ShortText type, Name name) {
 		'''<input class="«formClass»" type="text" id="«name»" placeholder="«name.text»">'''
 	}
-	def dispatch CharSequence compute(StringNumber type, Name name) {
-		''''''
-	}
-	def dispatch CharSequence compute(Name name) {
+	def dispatch CharSequence generateHTML(Name name) {
 		name.text
 	}
-	def dispatch CharSequence compute(Type type) {
+	def dispatch CharSequence generateHTML(Type type) {
 		type.text
 	}
 
@@ -110,13 +106,11 @@ class FormDSLGenerator extends AbstractGenerator {
 	def dispatch CharSequence handleExp(Optional exp, Name name){
 		isRequired = false
 		'''
-		
 		'''
 	}
 	def dispatch CharSequence handleExp(Focus exp, Name name){
 		hasFocus = true
 		'''
-		
 		'''
 	}
 	def dispatch CharSequence handleExp(Is exp, Name name){
