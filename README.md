@@ -18,15 +18,17 @@ The way simpler option is still supported, where the following BNF will produce 
 
 Ofcause options are important and therefore the two options of hardcoding numbers for validation and computing math for input validation is supported.
 
+# Validation:
+
 The language now contains validation for properties not specified (or not possible) in the DSL
 This means that one cannot write multiple 'optional' expressions for one input, and that multiple 'focus' expressions for a form gives a warning message.
 
-Validation -> errors:
+# Validation -> errors:
 	A form must have atleast one input field specified
 	An input field must have a name string
 	An inputs name string must not be empty
 	Multiple optional expressions for one input is not allowed
 	
-Validation -> warnings:
+# Validation -> warnings:
 	An inputs name should start with a capital letter
 	Multiple focus expressions will overwrite earlier focus expressions
