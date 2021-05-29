@@ -2,6 +2,14 @@ grammar form.FormDSL with org.eclipse.xtext.common.Terminals
 
 generate formDSL "http://www.FormDSL.form"
 
+Flow:
+	Form flow += (FlowForm)*
+;
+
+FlowForm:
+	"leadsTo" content = Form 
+;
+
 Form: 
 	{Form}"form" content += (Input)*
 ;
@@ -15,11 +23,10 @@ Input:
 Type:
 	{ShortText} text="shortText" | 
 	{Generic} text="date" | 
-	{Generic} text="number" | 
-	{Money} text="money" | 
+	{Generic} text="number" |
 	{Generic} text="email" | 
-	{LongText} text="longText" | 
-	{StringNumber} text="stringNumber"
+	{Money} text="money" |
+	{LongText} text="longText"
 ;
 
 Name: 
@@ -31,32 +38,32 @@ Expression:
 ;
 
 Exp returns Expression:
-	({Is}text="is" | {Length}text="length") comp=Comparison value=MathExp
+	({Is}text="is" | {Length}text="length") comp=Comparison value=PlusOrMinus
 ;
 
 Comparison:
-	"<" {LessThan} | 
-	">" {GreaterThan} | 
-	"<=" {LessThanInclusive} | 
-	">=" {GreaterThanInclusive} | 
-	"==" {Exactly} | 
-	"!=" {Not}
+	{LessThan} text="<" | 
+	{GreaterThan} text=">" | 
+	{LessThanInclusive} text="<=" | 
+	{GreaterThanInclusive} text=">=" | 
+	{Exactly} text="==" | 
+	{Not} text="!=" 
 ;
 
-MathExp returns Expression:
-	Factor (('+' {Plus.left=current} | '-' {Minus.left=current}) right=Factor)*
+PlusOrMinus returns Expression:
+	MultOrDiv (('+' {Plus.left=current} | '-' {Minus.left=current}) right=MultOrDiv)*
 ;
 
-Factor returns Expression:
-	Primary (('*' {Mult.left=current} | '/' {Div.left=current}) right=Primary)*	
+MultOrDiv returns Expression:
+	NumOrParen (('*' {Mult.left=current} | '/' {Div.left=current}) right=NumOrParen)*	
 ;
 
-Primary returns Expression:
+NumOrParen returns Expression:
 	Number | Parenthesis
 ;
 
 Parenthesis returns Expression:
-	'(' Exp ')'
+	'(' PlusOrMinus ')'
 ;
 
 Number returns Expression:

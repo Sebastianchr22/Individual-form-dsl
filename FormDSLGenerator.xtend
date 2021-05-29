@@ -16,7 +16,6 @@ import form.formDSL.Expression
 import form.formDSL.Generic
 import form.formDSL.LongText
 import form.formDSL.Money
-import form.formDSL.StringNumber
 import form.formDSL.ShortText
 import form.formDSL.Optional
 import form.formDSL.Focus
@@ -33,6 +32,11 @@ import form.formDSL.Minus
 import form.formDSL.Mult
 import form.formDSL.Div
 import form.formDSL.Num
+import form.formDSL.FlowForm
+import java.util.HashMap
+import java.util.Iterator
+import java.util.Map
+import java.util.ArrayList
 
 /**
  * Generates code from your model files on save.
@@ -42,81 +46,104 @@ import form.formDSL.Num
 class FormDSLGenerator extends AbstractGenerator {
 
 	var formClass = "form-control form-control-sm"
-	var isRequired = true;
-	var hasFocus = false;
+	var isRequired = true
+	var hasFocus = false
+	var pages = 0
+	
+	val nameAndForm = new HashMap<String, Form>();
+	val pageLinks = new HashMap<String, String>();
+	val pageNames = new ArrayList<String>();
 	
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		val form = resource.allContents.filter(Form).next
-		fsa.generateFile("formPage.html", form.compileClass);
+		form.splitForms()
+		for(pageName : pageNames){
+			var f = nameAndForm.get(pageName) as Form
+			var pageContent = 
+				'''
+					«startHTML»
+					«f.genForm»
+					«f.compilejs(pageName)»
+					«endHTML»
+				'''
+			fsa.generateFile(pageName + ".html", pageContent)
+		}
+	}
+	
+	def void linkPages(){
+		var pages = pageNames.size
+		for(var i = 0; i < pages -1; i++){
+			pageLinks.put(pageNames.get(i), pageNames.get(i + 1))
+		}
 	}
 	
 	
-	
 	/* Handles creating the initial form, and computing all input fields */
-	def CharSequence compileClass(Form form) {
-		'''
-			«startHTML()»
-			
-			<form onSubmit="submitHandler(event)">
-				«FOR input : form.content»
-					«input.compute»
-				«ENDFOR»
-				<br>
-				<input type="submit" class="btn btn-primary" value="Submit" onclick="submitHandler(event)">
-				<p style="color:red" id="error_output"></p>
-			</form>
-			
-			«form.compilejs»
-			«endHTML»
-		'''
+	def void splitForms(Form form) {
+		pageNames.add("index")
+		nameAndForm.put("index", form)
+		for(f : form.flow){
+			pageNames.add("form" + (pages))
+			nameAndForm.put("form" + (pages), f.content)
+			pages++
+		}
+		linkPages()
 	}
 	
 
 	/* Used to handle creating label associated with the input field (generated later) */
-	def dispatch CharSequence compute(Input input) {
+	def dispatch CharSequence generateHTML(Input input) {
 		'''
-			<label class="form-label">«input.name.compute»:</label>
-			«compute(input.type, input.name)»
+			<label class="form-label">«input.name.generateHTML»:</label>
+			«generateHTML(input.type, input.name)»
 		'''
 	}
 
-
+	def dispatch CharSequence genForm(FlowForm flowForm){
+		flowForm.content.genForm();
+	}
+	def dispatch CharSequence genForm(Form form){
+		'''
+		<form onSubmit="submitHandler(event)">
+			«FOR input : form.content»
+				«input.generateHTML»
+			«ENDFOR»
+			<br>
+			<input type="submit" class="btn btn-primary" value="Submit" onclick="submitHandler(event)">
+			<p style="color:red" id="error_output"></p>
+		</form>
+		'''
+	}
+	
 	/* Handles creation of input html */
-	def dispatch CharSequence compute(Generic type, Name name) {
+	def dispatch CharSequence generateHTML(Generic type, Name name) {
 		'''<input class="«formClass»" type="«type.text»" id="«name»" placeholder="«name.text»">'''
 	}
-	def dispatch CharSequence compute(LongText type, Name name) {
+	def dispatch CharSequence generateHTML(LongText type, Name name) {
 		'''<textarea class="«formClass»" id="«name»" rows="8" cols="50" placeholder="«name.text»"></textarea>'''
 	}
-	def dispatch CharSequence compute(Money type, Name name) {
+	def dispatch CharSequence generateHTML(Money type, Name name) {
 		'''<input class="«formClass»" type="number" min="0.00" max="10000.00" step="0.01" placeholder="0.00" id="«name»">'''
 	}
-	def dispatch CharSequence compute(ShortText type, Name name) {
+	def dispatch CharSequence generateHTML(ShortText type, Name name) {
 		'''<input class="«formClass»" type="text" id="«name»" placeholder="«name.text»">'''
 	}
-	def dispatch CharSequence compute(StringNumber type, Name name) {
-		''''''
-	}
-	def dispatch CharSequence compute(Name name) {
+	def dispatch CharSequence generateHTML(Name name) {
 		name.text
 	}
-	def dispatch CharSequence compute(Type type) {
+	def dispatch CharSequence generateHTML(Type type) {
 		type.text
 	}
-
-
 
 	/* Handle (optional) Expressions */
 	def dispatch CharSequence handleExp(Optional exp, Name name){
 		isRequired = false
 		'''
-		
 		'''
 	}
 	def dispatch CharSequence handleExp(Focus exp, Name name){
 		hasFocus = true
 		'''
-		
 		'''
 	}
 	def dispatch CharSequence handleExp(Is exp, Name name){
@@ -159,23 +186,25 @@ class FormDSLGenerator extends AbstractGenerator {
 		'''!='''
 	}
 
-	
 	/* Handling math expressions */
-	def float computeMath(Expression exp){
-		switch exp{
-			Plus: exp.left.computeMath + exp.right.computeMath
-			Minus: exp.left.computeMath - exp.right.computeMath
-			Mult: exp.left.computeMath * exp.right.computeMath
-			Div: exp.left.computeMath / exp.right.computeMath
-			Num: exp.value
-		}
+	def dispatch float computeMath(Plus plus){
+		return plus.left.computeMath + plus.right.computeMath
 	}
-
-
-
-
+	def dispatch float computeMath(Minus minus){
+		return minus.left.computeMath - minus.right.computeMath
+	}
+	def dispatch float computeMath(Mult mult){
+		return mult.left.computeMath * mult.right.computeMath
+	}
+	def dispatch float computeMath(Div div){
+		return div.left.computeMath / div.right.computeMath
+	}
+	def dispatch float computeMath(Num num){
+		return num.value
+	}
+	
 	/* Handling creating the JS and HTML required */
-	def CharSequence compilejs(Form form) {
+	def CharSequence compilejs(Form form, String pageName) {
 		var List<String> validators = newArrayList
 		'''
 			<script>
@@ -194,7 +223,6 @@ class FormDSLGenerator extends AbstractGenerator {
 					document.getElementById("«input.name»").focus();
 				«ENDIF»
 			«ENDFOR»
-			
 			function submitHandler(e){
 				console.log("Called submit!");
 				var failedProperty = false;
@@ -208,11 +236,17 @@ class FormDSLGenerator extends AbstractGenerator {
 						e.preventDefault();
 						return false;
 					}else{
-						//Submit
-						document.getElementById("error_output").innerHTML = ""
-						console.log("Submit!");
-						return true;
+						document.getElementById("error_output").innerHTML = "";
+						e.preventDefault();
+						window.location.replace("«pageLinks.get(pageName)».html");
+						return false;
 					}
+			}
+			
+			function submit(){
+				//Submit to be overvritten!!
+				console.log("Submit!");
+				
 			}
 			</script>
 		'''
